@@ -59,6 +59,7 @@ jobs:
             mv "${{ env.DEPLOY_DIR }}/wordpress/"* "${{ env.DEPLOY_DIR }}/"
             rm -r "${{ env.DEPLOY_DIR }}/wordpress"
 
+
       - name: Update Plugins and Theme
         uses: appleboy/ssh-action@v1.0.3
         with:
