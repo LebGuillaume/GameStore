@@ -9,6 +9,7 @@
  * @since 1.0.0
  */
 ?>
+test
 <!-- wp:columns {"align":"wide"} -->
 <div class="wp-block-columns alignwide">
 	<!-- wp:column -->
