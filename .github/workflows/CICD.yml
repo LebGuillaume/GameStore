@@ -1,10 +1,13 @@
 name: GameStore Deploy
 
+
 on:
   push:
     branches:
       - dev
-      - prod
+  release:
+    types: [published]
+
 
 jobs:
   deploy:
@@ -58,6 +61,7 @@ jobs:
             unzip -o "${{ env.DEPLOY_DIR }}/wordpress.zip" -d "${{ env.DEPLOY_DIR }}/"
             mv "${{ env.DEPLOY_DIR }}/wordpress/"* "${{ env.DEPLOY_DIR }}/"
             rm -r "${{ env.DEPLOY_DIR }}/wordpress"
+
 
       - name: Update Plugins and Theme
         uses: appleboy/ssh-action@v1.0.3
