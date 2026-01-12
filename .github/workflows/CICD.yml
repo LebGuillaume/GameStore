@@ -1,35 +1,82 @@
-name: gameStore Deploy
+name: GameStore Deploy
 
 on:
   push:
     branches:
       - dev
+      - prod
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DEPLOY_DIR: ${{ github.ref_name == 'prod' && '/home/guillal/prod' || '/home/guillal/dev' }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare WordPress Files
+      - name: Prepare WordPress Zip
         run: |
-          wp_LINK=$(cat wp-version-control.cfg)
-          wget -O "wordpress.zip" "$wp_LINK"
-          rm -rf deploy
-          mkdir -p deploy
-          unzip -q wordpress.zip -d deploy
-          rm -rf deploy/wordpress/wp-content/plugins deploy/wordpress/wp-content/mu-plugins deploy/wordpress/wp-content/themes
-          mkdir -p deploy/wordpress/wp-content
-          cp -R plugins mu-plugins themes deploy/wordpress/wp-content/
+          WP_LINK=$(cat wp-version-control.cfg)
+          wget -O "./wordpress.zip" "$WP_LINK"
 
-      - name: Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Prepare plugins and theme zip
+        run: zip -r wpcontent.zip plugins mu-plugins themes
+
+      - name: Copy Zips to Server
+        uses: appleboy/scp-action@master
         with:
-          server: ${{ secrets.SERVER_HOST }}
+          host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_SSH_PASSWORD }}
-          port: 21
-          local-dir: deploy/wordpress/
-          server-dir: /dev/
+          port: ${{ secrets.SERVER_PORT }}
+          source: "wordpress.zip, wpcontent.zip"
+          target: ${{ env.DEPLOY_DIR }}
+
+      - name: Enable Maintenance Mode
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_SSH_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: ".maintenance"
+          target: ${{ env.DEPLOY_DIR }}
+
+      - name: Update WordPress Core
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_SSH_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            find "${{ env.DEPLOY_DIR }}" -type f -name "*.php" ! -name "wp-config.php" -delete
+            rm -r "${{ env.DEPLOY_DIR }}/wp-admin/" "${{ env.DEPLOY_DIR }}/wp-includes/"
+            unzip -o "${{ env.DEPLOY_DIR }}/wordpress.zip" -d "${{ env.DEPLOY_DIR }}/"
+            mv "${{ env.DEPLOY_DIR }}/wordpress/"* "${{ env.DEPLOY_DIR }}/"
+            rm -r "${{ env.DEPLOY_DIR }}/wordpress"
+
+      - name: Update Plugins and Theme
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_SSH_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            rm -rf "${{ env.DEPLOY_DIR }}/wp-content/plugins" "${{ env.DEPLOY_DIR }}/wp-content/mu-plugins" "${{ env.DEPLOY_DIR }}/wp-content/themes"
+            unzip -o "${{ env.DEPLOY_DIR }}/wpcontent.zip" -d "${{ env.DEPLOY_DIR }}/wp-content/"
+
+      - name: Disable Maintenance Mode and Remove zips
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          password: ${{ secrets.SERVER_SSH_PASSWORD }}
+          port: ${{ secrets.SERVER_PORT }}
+          script: |
+            rm -f "${{ env.DEPLOY_DIR }}/.maintenance"
+            rm -f "${{ env.DEPLOY_DIR }}/wpcontent.zip"
+            rm -f "${{ env.DEPLOY_DIR }}/wordpress.zip"
