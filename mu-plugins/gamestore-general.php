@@ -27,3 +27,21 @@ function gamestore_remove_dashboard_widgets()
     unset($wp_meta_boxes['dashboard']['normal']['core']['dashboard_site_health']);
 }
 add_action('wp_dashboard_setup', 'gamestore_remove_dashboard_widgets');
+
+function gamestore_allow_svg_uploads($mimes)
+{
+    $mimes['svg'] = 'image/svg+xml';
+    return $mimes;
+}
+add_filter('upload_mimes', 'gamestore_allow_svg_uploads');
+
+function gamestore_fix_svg()
+{
+    echo '<style>
+        .attachment-266x266, .thumbnail img {
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>';
+}
+add_action('admin_head', 'gamestore_fix_svg');
