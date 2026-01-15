@@ -17,6 +17,17 @@
 if (! defined('ABSPATH')) {
 	exit; // Exit if accessed directly.
 }
+add_filter('block_categories_all', function ($categories) {
+	$gamestore_category = [
+		'slug' => 'gamestore',
+		'title' => __('GameStore Blocks', 'blocks-gamestore'),
+		'icon'  => 'games',
+	];
+
+	$categories[] = $gamestore_category;
+
+	return $categories;
+}, 10, 2);
 /**
  * Registers the block using a `blocks-manifest.php` file, which improves the performance of block type registration.
  * Behind the scenes, it also registers all assets so they can be enqueued
