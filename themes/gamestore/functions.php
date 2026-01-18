@@ -15,6 +15,20 @@ function gamestore_styles()
 		wp_get_theme()->get('Version'),
 		true
 	);
+	//Swiper
+	wp_enqueue_style(
+		'swiper-css',
+		get_stylesheet_directory_uri() . '/assets/css/swiper-bundle.min.css',
+		[],
+		wp_get_theme()->get('Version')
+	);
+	wp_enqueue_script(
+		'swiper-js',
+		get_stylesheet_directory_uri() . '/assets/js/swiper-bundle.min.js',
+		[],
+		wp_get_theme()->get('Version'),
+		true
+	);
 }
 add_action('wp_enqueue_scripts', 'gamestore_styles');
 
